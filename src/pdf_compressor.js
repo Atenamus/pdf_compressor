@@ -7,6 +7,7 @@ import { execSync } from "child_process";
 import fs from "fs";
 import path from "path";
 import treeprompt from "inquirer-file-tree-selection-prompt";
+
 inquirer.registerPrompt("file-tree-selection", treeprompt);
 
 const compressionLevels = {
@@ -23,11 +24,6 @@ const compressionLevels = {
   "High (slower, smaller file size)": [
     "-dPDFSETTINGS=/printer",
     "-dColorImageDownsampleType=/Bicubic",
-    "-dColorImageResolution=300",
-  ],
-  "Very High (aggressive compression)": [
-    "-dPDFSETTINGS=/printer",
-    "-dColorImageDownsampleType=/Bicubic",
     "-dColorImageResolution=150",
     "-dGrayImageDownsampleType=/Bicubic",
     "-dGrayImageResolution=150",
@@ -42,13 +38,13 @@ async function main() {
   const { pdfName } = await inquirer.prompt({
     type: "file-tree-selection",
     name: "pdfName",
-    message: "Enter the name of the PDF file:",
+    message: "Select the PDF file:",
     validate: (input) => {
-      if (!input.endsWith(".pdf")) {
+      if (!input.toLowerCase().endsWith(".pdf")) {
         return "Please select a valid PDF file.";
       }
       if (!fs.existsSync(input)) {
-        return "File Doesn't Exist";
+        return "File doesn't exist.";
       }
       return true;
     },
@@ -63,20 +59,35 @@ async function main() {
 
   const dirName = path.dirname(pdfName);
   const baseName = path.basename(pdfName, ".pdf");
-  
+
   const outputName = path.join(dirName, `compressed_${baseName}.pdf`);
   const spinner = createSpinner("Compressing PDF...").start();
 
-  const gsCommand = process.platform === "win32" ? "gswin64" : "gs";
+  const gsCommand = process.platform === "win32" ? "gswin64c" : "gs";
 
   try {
-    execSync(
-      `${gsCommand} -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 ${compressionLevel} -dNOPAUSE -dQUIET -dBATCH -sOutputFile=${outputName} ${pdfName}`
-    );
+    const compressionArgs = compressionLevels[compressionLevel].join(" ");
+    const command = `"${gsCommand}" -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 ${compressionArgs} -dNOPAUSE -dQUIET -dBATCH -sOutputFile="${outputName}" "${pdfName}"`;
+
+    execSync(command, { stdio: "pipe" });
+
+    const originalSize = fs.statSync(pdfName).size;
+    const compressedSize = fs.statSync(outputName).size;
+    const compressionRatio = (
+      ((originalSize - compressedSize) / originalSize) *
+      100
+    ).toFixed(2);
+
     spinner.success({
-      text: chalk.green(
-        `PDF compressed successfully! Output file: ${outputName}`
-      ),
+      text:
+        chalk.green("PDF compressed successfully!\n") +
+        chalk.white(
+          `Original size: ${(originalSize / 1024 / 1024).toFixed(
+            2
+          )} MB\nCompressed size: ${(compressedSize / 1024 / 1024).toFixed(
+            2
+          )} MB\nCompression ratio: ${compressionRatio}%\nOutput file: ${outputName}`
+        ),
     });
   } catch (error) {
     spinner.error({
@@ -84,8 +95,8 @@ async function main() {
         "Error compressing PDF. Make sure Ghostscript is installed and the input file is valid."
       ),
     });
-    console.error(error);
+    console.error(error.toString());
   }
 }
 
-main();
+main().catch((error) => console.error("An unexpected error occurred:", error));
