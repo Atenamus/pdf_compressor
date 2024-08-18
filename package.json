@@ -1,10 +1,10 @@
 {
   "name": "pdf_compressor",
   "version": "1.0.0",
-  "main": "src/index.js",
+  "main": "src/pdf_compressor.js",
   "type": "module",
   "scripts": {
-    "start": "node src/index.js"
+    "start": "node src/pdf_compressor.js"
   },
   "keywords": [],
   "author": "",

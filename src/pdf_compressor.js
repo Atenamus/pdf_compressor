@@ -10,9 +10,30 @@ import treeprompt from "inquirer-file-tree-selection-prompt";
 inquirer.registerPrompt("file-tree-selection", treeprompt);
 
 const compressionLevels = {
-  "Low (faster, larger file size)": "/screen",
-  "Medium (balanced)": "/ebook",
-  "High (slower, smaller file size)": "/prepress",
+  "Low (faster, larger file size)": [
+    "-dPDFSETTINGS=/screen",
+    "-dColorImageDownsampleType=/Subsample",
+    "-dColorImageResolution=72",
+  ],
+  "Medium (balanced)": [
+    "-dPDFSETTINGS=/ebook",
+    "-dColorImageDownsampleType=/Average",
+    "-dColorImageResolution=150",
+  ],
+  "High (slower, smaller file size)": [
+    "-dPDFSETTINGS=/printer",
+    "-dColorImageDownsampleType=/Bicubic",
+    "-dColorImageResolution=300",
+  ],
+  "Very High (aggressive compression)": [
+    "-dPDFSETTINGS=/printer",
+    "-dColorImageDownsampleType=/Bicubic",
+    "-dColorImageResolution=150",
+    "-dGrayImageDownsampleType=/Bicubic",
+    "-dGrayImageResolution=150",
+    "-dMonoImageDownsampleType=/Bicubic",
+    "-dMonoImageResolution=150",
+  ],
 };
 
 async function main() {
@@ -42,14 +63,15 @@ async function main() {
 
   const dirName = path.dirname(pdfName);
   const baseName = path.basename(pdfName, ".pdf");
-
+  
   const outputName = path.join(dirName, `compressed_${baseName}.pdf`);
   const spinner = createSpinner("Compressing PDF...").start();
 
   const gsCommand = process.platform === "win32" ? "gswin64" : "gs";
+
   try {
     execSync(
-      `${gsCommand} -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=${compressionLevels[compressionLevel]} -dNOPAUSE -dQUIET -dBATCH -sOutputFile=${outputName} ${pdfName}`
+      `${gsCommand} -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 ${compressionLevel} -dNOPAUSE -dQUIET -dBATCH -sOutputFile=${outputName} ${pdfName}`
     );
     spinner.success({
       text: chalk.green(
