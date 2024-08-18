@@ -7,7 +7,7 @@ import { execSync } from "child_process";
 import fs from "fs";
 import path from "path";
 import treeprompt from "inquirer-file-tree-selection-prompt";
-
+import figlet from "figlet";
 inquirer.registerPrompt("file-tree-selection", treeprompt);
 
 const compressionLevels = {
@@ -33,7 +33,23 @@ const compressionLevels = {
 };
 
 async function main() {
-  console.log(chalk.blue.bold("PDF Compression Tool"));
+  await figlet(
+    "cli-tools",
+    {
+      font: "3-D",
+      horizontalLayout: "full",
+      verticalLayout: "default",
+      width: 80,
+      whitespaceBreak: true,
+    },
+    (data, err) => {
+      if (err) {
+        console.dir(err);
+        return;
+      }
+      console.log(data);
+    }
+  );
 
   const { pdfName } = await inquirer.prompt({
     type: "file-tree-selection",
@@ -70,14 +86,14 @@ async function main() {
     const command = `"${gsCommand}" -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 ${compressionArgs} -dNOPAUSE -dQUIET -dBATCH -sOutputFile="${outputName}" "${pdfName}"`;
 
     execSync(command, { stdio: "pipe" });
-
+    ch;
     const originalSize = fs.statSync(pdfName).size;
     const compressedSize = fs.statSync(outputName).size;
     const compressionRatio = (
       ((originalSize - compressedSize) / originalSize) *
       100
     ).toFixed(2);
-
+    chalk;
     spinner.success({
       text:
         chalk.green("PDF compressed successfully!\n") +
