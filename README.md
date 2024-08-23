@@ -22,8 +22,6 @@ Before using this tool, ensure that you have the following installed:
 
 2. **Install Dependencies**
 
-   Navigate to the directory containing `index.js` and run:
-
    ```bash
    npm install
    ```
